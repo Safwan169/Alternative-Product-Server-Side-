@@ -42,6 +42,11 @@ async function run() {
                 const result = await cursor.toArray();
                 res.send(result);
       })
+      app.post('/queries',async(req,res)=>{
+        const user=req.body
+        const result = await data.insertOne(user)
+          res.send(result)
+      })
 
 
     // const movie = await movies.find();
