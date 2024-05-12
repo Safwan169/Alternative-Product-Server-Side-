@@ -3,7 +3,7 @@ const app=express();
 const port =process.env.PROT||5000;
 require('dotenv').config()
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 
 const cors =require('cors')
@@ -35,6 +35,7 @@ async function run() {
 
     const database = client.db("alternative");
     const data = database.collection("queries");
+    const data1 = database.collection("recommendationData");
 
 
     app.get('/queries',async (req,res)=>{
@@ -56,6 +57,36 @@ async function run() {
 
       })
 
+      // recommendation update
+      app.put('/recc/:idd', async (req, res) => {
+        const id = req.params.idd;
+        console.log(id)
+        const filter = { _id: new ObjectId(id) }
+        const options = { upsert: true };
+        // const datas1 = req.body;
+        // console.log(datas1)
+      
+        const updateData = {
+          $inc: { recommendationCount: 1 }
+        }
+      
+        const result = await data.updateOne(filter, updateData, options);
+        res.send(result);
+      })
+
+      // recommendation data post
+      app.post('/rec',async(req,res)=>{
+        const user=req.body
+        const result = await data1.insertOne(user)
+          res.send(result)
+      })
+
+      // recommendation data get 
+      app.get('/rec',async (req,res)=>{
+        const cursor = data1.find();
+                const result = await cursor.toArray();
+                res.send(result);
+      })
 
     // const movie = await movies.find();
     // console.log(movie)
