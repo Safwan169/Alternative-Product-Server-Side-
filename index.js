@@ -47,6 +47,14 @@ async function run() {
         const result = await data.insertOne(user)
           res.send(result)
       })
+// my queries
+      app.get('/myqueries/:email',async(req,res)=>{
+        const email=req.params.email
+        const cursor=data.find({email})
+        const request=await cursor.toArray();
+        res.send(request)
+
+      })
 
 
     // const movie = await movies.find();
