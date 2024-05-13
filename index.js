@@ -73,6 +73,32 @@ async function run() {
         const result = await data.updateOne(filter, updateData, options);
         res.send(result);
       })
+      // decreasing  recommendation count
+      app.put('/delete/:idd', async (req, res) => {
+        const id = req.params.idd;
+        const filter = { _id: new ObjectId(id) }
+        const options = { upsert: true };
+        // const datas1 = req.body;
+        // console.log(datas1)
+        console.log(id,filter)
+      
+        const deleteData = {
+          $inc: { recommendationCount: -1 }
+        }
+      
+        const result = await data.updateOne(filter, deleteData, options);
+        res.send(result);
+      })
+
+      // delete recommendation data
+      app.delete('/de/:id', async (req, res) => {
+        const id = req.params.id;
+        console.log(id)
+        const query = { _id: new ObjectId(id) }
+        const result = await data1.deleteOne(query);
+        res.send(result);
+      })
+
 
       // recommendation data post
       app.post('/rec',async(req,res)=>{
