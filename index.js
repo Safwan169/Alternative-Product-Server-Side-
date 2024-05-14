@@ -1,14 +1,18 @@
-const express= require('express');
-const app=express();
-const port =process.env.PROT||5000;
+const express = require('express');
+const app = express();
+const port = process.env.PROT || 5000;
 require('dotenv').config()
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 
-const cors =require('cors')
+const cors = require('cors')
 app.use(express.json());
-app.use(cors());
+app.use(cors(
+{  origin:"http://localhost:5173",
+methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]}
+
+));
 
 
 
@@ -29,7 +33,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
 
 
@@ -37,82 +41,123 @@ async function run() {
     const data = database.collection("queries");
     const data1 = database.collection("recommendationData");
 
+    // get all queries data
+    app.get('/queries', async (req, res) => {
+      const cursor = data.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    })
 
-    app.get('/queries',async (req,res)=>{
-        const cursor = data.find();
-                const result = await cursor.toArray();
-                res.send(result);
-      })
-      app.post('/queries',async(req,res)=>{
-        const user=req.body
-        const result = await data.insertOne(user)
-          res.send(result)
-      })
-// my queries
-      app.get('/myqueries/:email',async(req,res)=>{
-        const email=req.params.email
-        const cursor=data.find({email})
-        const request=await cursor.toArray();
-        res.send(request)
+    // post  queries data
 
-      })
+    app.post('/queries', async (req, res) => {
+      const user = req.body
+      const result = await data.insertOne(user)
+      res.send(result)
+    })
 
-      // recommendation update
-      app.put('/recc/:idd', async (req, res) => {
-        const id = req.params.idd;
-        console.log(id)
-        const filter = { _id: new ObjectId(id) }
-        const options = { upsert: true };
-        // const datas1 = req.body;
-        // console.log(datas1)
-      
-        const updateData = {
-          $inc: { recommendationCount: 1 }
-        }
-      
-        const result = await data.updateOne(filter, updateData, options);
-        res.send(result);
-      })
-      // decreasing  recommendation count
-      app.put('/delete/:idd', async (req, res) => {
-        const id = req.params.idd;
-        const filter = { _id: new ObjectId(id) }
-        const options = { upsert: true };
-        // const datas1 = req.body;
-        // console.log(datas1)
-        console.log(id,filter)
-      
-        const deleteData = {
-          $inc: { recommendationCount: -1 }
-        }
-      
-        const result = await data.updateOne(filter, deleteData, options);
-        res.send(result);
-      })
+    // update queries data
+app.put('/queriesUpdate/:idd', async (req, res) => {
+  const id = req.params.idd;
+  console.log(id)
+  const filter = { _id: new ObjectId(id) }
+  const options = { upsert: true };
+  const datas1 = req.body;
+  console.log(datas1)
 
-      // delete recommendation data
-      app.delete('/de/:id', async (req, res) => {
-        const id = req.params.id;
-        console.log(id)
-        const query = { _id: new ObjectId(id) }
-        const result = await data1.deleteOne(query);
-        res.send(result);
-      })
+  const updateData = {
+      $set: {
+          date: datas1.date,
+          name: datas1.name,
+          brand_name: datas1.brand_name,
+          url: datas1.url,
+          reason: datas1.reason,
+          location: datas1.location,
+          product_title: datas1.product_title,
+          // description: datas1.description,
+          // spot: datas1.spot
+      }
+  }
+
+  const result = await data.updateOne(filter, updateData, options);
+  res.send(result);
+})
+
+    // delete queries data
+    app.delete('/queries/:id', async (req, res) => {
+      const id = req.params.id;
+      // console.log(id)
+      const query = { _id: new ObjectId(id) }
+      const result = await data.deleteOne(query);
+      res.send(result);
+    })
 
 
-      // recommendation data post
-      app.post('/rec',async(req,res)=>{
-        const user=req.body
-        const result = await data1.insertOne(user)
-          res.send(result)
-      })
+    // my queries
+    app.get('/myqueries/:email', async (req, res) => {
+      const email = req.params.email
+      const cursor = data.find({ email })
+      const request = await cursor.toArray();
+      res.send(request)
 
-      // recommendation data get 
-      app.get('/rec',async (req,res)=>{
-        const cursor = data1.find();
-                const result = await cursor.toArray();
-                res.send(result);
-      })
+    })
+
+    // recommendation update
+    app.put('/recc/:idd', async (req, res) => {
+      const id = req.params.idd;
+      console.log(id)
+      const filter = { _id: new ObjectId(id) }
+      const options = { upsert: true };
+      // const datas1 = req.body;
+      // console.log(datas1)
+
+      const updateData = {
+        $inc: { recommendationCount: 1 }
+      }
+
+      const result = await data.updateOne(filter, updateData, options);
+      res.send(result);
+    })
+    // decreasing  recommendation count
+    app.put('/delete/:idd', async (req, res) => {
+      const id = req.params.idd;
+      const filter = { _id: new ObjectId(id) }
+      const options = { upsert: true };
+      // const datas1 = req.body;
+      // console.log(datas1)
+      // console.log(id,filter)
+
+      const deleteData = {
+        $inc: { recommendationCount: -1 }
+      }
+
+      const result = await data.updateOne(filter, deleteData, options);
+      res.send(result);
+    })
+
+    // delete recommendation data
+    app.delete('/de/:id', async (req, res) => {
+      const id = req.params.id;
+      // console.log(id)
+      const query = { _id: new ObjectId(id) }
+      const result = await data1.deleteOne(query);
+      res.send(result);
+    })
+
+
+    // recommendation data post
+    app.post('/rec', async (req, res) => {
+      const user = req.body
+      const result = await data1.insertOne(user)
+      res.send(result)
+    })
+
+    // recommendation data get 
+    app.get('/rec', async (req, res) => {
+      const cursor = data1.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    })
 
     // const movie = await movies.find();
     // console.log(movie)
@@ -128,12 +173,12 @@ run().catch(console.dir);
 ;
 
 
-app.get('/',(req,res)=>{
-    res.send('asdhfjsd')
+app.get('/', (req, res) => {
+  res.send('asdhfjsd')
 })
 
 
 
-app.listen(port,()=>{
-    console.log(`kaj hoisa ${port}`)
+app.listen(port, () => {
+  console.log(`kaj hoisa ${port}`)
 })
