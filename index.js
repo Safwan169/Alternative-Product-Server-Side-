@@ -2,42 +2,46 @@ const express = require('express');
 const app = express();
 const port = process.env.PROT || 5000;
 require('dotenv').config()
-// const jwt = require('jsonwebtoken');
-// const cookieParser = require('cookie-parser')
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser')
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 
 const cors = require('cors')
 app.use(express.json());
-// app.use(cookieParser());
+app.use(cookieParser());
 app.use(cors(
   {
     origin: ["http://localhost:5174", "http://localhost:5173", "https://product-info-bd6b7.web.app"],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    // credentials: true
+    credentials: true
   }
 
 ));
 
-// const verifyToken = (req, res, next) => {
-//   const token = req?.cookies?.token;
-//   // console.log('token in the middleware', token);
-//   // no token available 
-//   if (!token) {
-//     return res.status(401).send({ message: 'unauthorized access' })
-//   }
-//   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-//     if (err) {
-//       return res.status(401).send({ message: 'unauthorized access' })
-//     }
-//     req.user = decoded;
-//     next();
-//   })
-// }
+const verifyToken = (req, res, next) => {
+  const token = req?.cookies?.token;
+  console.log('token in the middleware', token);
+  // no token available 
+  if (!token) {
+    return res.status(401).send({ message: 'unauthorized access ' })
+  }
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ message: 'unauthorized access ' })
+    }
+    req.user = decoded;
+    next();
+  })
+}
 
 
-
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+};
 
 
 const uri = `mongodb+srv://${process.env.DATA_1}:${process.env.DATA_2}@cluster0.6zehkma.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -64,24 +68,20 @@ async function run() {
 
 
     // auth related api
-    // app.post('/jwt', logger, async (req, res) => {
-    //   const user = req.body;
-    //   console.log('user for token', user);
-    //   const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+    app.post('/jwt', async (req, res) => {
+      const user = req.body;
+      console.log('user for token', user);
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
 
-    //   res.cookie('token', token, {
-    //     httpOnly: true,
-    //     secure: true,
-    //     sameSite: 'none'
-    //   })
-    //     .send({ success: true });
-    // })
+      res.cookie('token', token,cookieOptions)
+        .send({ success: true });
+    })
 
-  //   app.post('/logout', async (req, res) => {
-  //     const user = req.body;
-  //     console.log('logging out', user);
-  //     res.clearCookie('token', { maxAge: 0 }).send({ success: true })
-  // })
+    app.post('/logout', async (req, res) => {
+      const user = req.body;
+      console.log('logging out', user);
+      res.clearCookie('token', {...cookieOptions, maxAge: 0 }).send({ success: true })
+  })
 
     // get all queries data
     app.get('/queries', async (req, res) => {
