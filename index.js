@@ -3,7 +3,7 @@ const app = express();
 const port = process.env.PROT || 5000;
 require('dotenv').config()
 // const jwt = require('jsonwebtoken');
-// const cookieParser = require('cookie-parser');
+// const cookieParser = require('cookie-parser')
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
