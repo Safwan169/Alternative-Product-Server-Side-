@@ -2,18 +2,39 @@ const express = require('express');
 const app = express();
 const port = process.env.PROT || 5000;
 require('dotenv').config()
+// const jwt = require('jsonwebtoken');
+// const cookieParser = require('cookie-parser');
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 
 const cors = require('cors')
 app.use(express.json());
+// app.use(cookieParser());
 app.use(cors(
-{  origin:"http://localhost:5173",
-methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]}
+  {
+    origin: ["http://localhost:5174", "http://localhost:5173", "https://product-info-bd6b7.web.app"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    // credentials: true
+  }
 
 ));
 
+// const verifyToken = (req, res, next) => {
+//   const token = req?.cookies?.token;
+//   // console.log('token in the middleware', token);
+//   // no token available 
+//   if (!token) {
+//     return res.status(401).send({ message: 'unauthorized access' })
+//   }
+//   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+//     if (err) {
+//       return res.status(401).send({ message: 'unauthorized access' })
+//     }
+//     req.user = decoded;
+//     next();
+//   })
+// }
 
 
 
@@ -41,6 +62,27 @@ async function run() {
     const data = database.collection("queries");
     const data1 = database.collection("recommendationData");
 
+
+    // auth related api
+    // app.post('/jwt', logger, async (req, res) => {
+    //   const user = req.body;
+    //   console.log('user for token', user);
+    //   const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+
+    //   res.cookie('token', token, {
+    //     httpOnly: true,
+    //     secure: true,
+    //     sameSite: 'none'
+    //   })
+    //     .send({ success: true });
+    // })
+
+  //   app.post('/logout', async (req, res) => {
+  //     const user = req.body;
+  //     console.log('logging out', user);
+  //     res.clearCookie('token', { maxAge: 0 }).send({ success: true })
+  // })
+
     // get all queries data
     app.get('/queries', async (req, res) => {
       const cursor = data.find();
@@ -57,16 +99,16 @@ async function run() {
     })
 
     // update queries data
-app.put('/queriesUpdate/:idd', async (req, res) => {
-  const id = req.params.idd;
-  console.log(id)
-  const filter = { _id: new ObjectId(id) }
-  const options = { upsert: true };
-  const datas1 = req.body;
-  console.log(datas1)
+    app.put('/queriesUpdate/:idd', async (req, res) => {
+      const id = req.params.idd;
+      console.log(id)
+      const filter = { _id: new ObjectId(id) }
+      const options = { upsert: true };
+      const datas1 = req.body;
+      console.log(datas1)
 
-  const updateData = {
-      $set: {
+      const updateData = {
+        $set: {
           date: datas1.date,
           name: datas1.name,
           brand_name: datas1.brand_name,
@@ -76,12 +118,12 @@ app.put('/queriesUpdate/:idd', async (req, res) => {
           product_title: datas1.product_title,
           // description: datas1.description,
           // spot: datas1.spot
+        }
       }
-  }
 
-  const result = await data.updateOne(filter, updateData, options);
-  res.send(result);
-})
+      const result = await data.updateOne(filter, updateData, options);
+      res.send(result);
+    })
 
     // delete queries data
     app.delete('/queries/:id', async (req, res) => {
@@ -92,9 +134,19 @@ app.put('/queriesUpdate/:idd', async (req, res) => {
       res.send(result);
     })
 
-
-    // my queries
+// ver
+    // my queries  
     app.get('/myqueries/:email', async (req, res) => {
+
+
+      if (req.user.email !== req.params.email) {
+        return res.status(403).send({ message: 'forbidden access' })
+      }
+      let query = {};
+      if (req.query?.email) {
+        query = { email: req.query.email }
+      }
+
       const email = req.params.email
       const cursor = data.find({ email })
       const request = await cursor.toArray();
